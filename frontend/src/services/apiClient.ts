@@ -1,6 +1,6 @@
 import { Card, Item, Resource, SubGroup } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = 'https://work-resource-management-hub.onrender.com/api';
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${url}`, {
