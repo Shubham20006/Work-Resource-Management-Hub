@@ -42,8 +42,8 @@ app.use(
   })
 );
 
-// Health check endpoint for Render
-app.get('/api/health', (_req: Request, res: Response) => {
+// Health check endpoints for Render
+app.get(['/api/health', '/healthz'], (_req: Request, res: Response) => {
   res.status(200).json({
     status: 'ok',
     service: 'sheet-manager-api',
