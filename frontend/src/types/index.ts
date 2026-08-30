@@ -39,6 +39,8 @@ export interface Item {
   updatedAt?: string;
 }
 
+export type SortOption = 'updated-desc' | 'updated-asc' | 'name-asc' | 'name-desc' | 'resources-desc' | 'custom-order';
+
 export interface Card {
   id: string;
   name: string;
@@ -47,6 +49,7 @@ export interface Card {
   color: string;
   category: string;
   order?: number;
+  isFavorite?: boolean;
   items: Item[];
   createdAt?: string;
   updatedAt?: string;
@@ -55,4 +58,5 @@ export interface Card {
 export interface CardFilter {
   searchQuery: string;
   category?: string;
+  sortBy?: SortOption;
 }
