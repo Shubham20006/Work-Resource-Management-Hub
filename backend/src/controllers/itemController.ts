@@ -1,8 +1,10 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
+import { AuthRequest } from '../middleware/authMiddleware.js';
 import { CardModel } from '../models/Card.js';
 
-export const addItem = async (req: Request, res: Response): Promise<void> => {
+export const addItem = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const userId = req.user?.userId;
     const { cardId } = req.params;
     const { name, description, githubUrl, resourceUrl } = req.body;
 
@@ -11,7 +13,7 @@ export const addItem = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const card = await CardModel.findById(cardId);
+    const card = await CardModel.findOne({ _id: cardId, userId });
     if (!card) {
       res.status(404).json({ error: 'Workspace not found' });
       return;
@@ -37,12 +39,13 @@ export const addItem = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export const updateItem = async (req: Request, res: Response): Promise<void> => {
+export const updateItem = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const userId = req.user?.userId;
     const { cardId, itemId } = req.params;
     const { name, description, githubUrl, resourceUrl, order } = req.body;
 
-    const card = await CardModel.findById(cardId);
+    const card = await CardModel.findOne({ _id: cardId, userId });
     if (!card) {
       res.status(404).json({ error: 'Workspace not found' });
       return;
@@ -67,11 +70,12 @@ export const updateItem = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
-export const deleteItem = async (req: Request, res: Response): Promise<void> => {
+export const deleteItem = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const userId = req.user?.userId;
     const { cardId, itemId } = req.params;
 
-    const card = await CardModel.findById(cardId);
+    const card = await CardModel.findOne({ _id: cardId, userId });
     if (!card) {
       res.status(404).json({ error: 'Workspace not found' });
       return;
@@ -86,8 +90,9 @@ export const deleteItem = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
-export const moveItem = async (req: Request, res: Response): Promise<void> => {
+export const moveItem = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const userId = req.user?.userId;
     const { cardId, itemId } = req.params;
     const { targetCardId } = req.body;
 
@@ -101,13 +106,13 @@ export const moveItem = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    const sourceCard = await CardModel.findById(cardId);
+    const sourceCard = await CardModel.findOne({ _id: cardId, userId });
     if (!sourceCard) {
       res.status(404).json({ error: 'Source workspace not found' });
       return;
     }
 
-    const targetCard = await CardModel.findById(targetCardId);
+    const targetCard = await CardModel.findOne({ _id: targetCardId, userId });
     if (!targetCard) {
       res.status(404).json({ error: 'Target workspace not found' });
       return;
@@ -140,12 +145,13 @@ export const moveItem = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export const reorderItems = async (req: Request, res: Response): Promise<void> => {
+export const reorderItems = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const userId = req.user?.userId;
     const { cardId } = req.params;
     const { orderedItemIds } = req.body as { orderedItemIds: string[] };
 
-    const card = await CardModel.findById(cardId);
+    const card = await CardModel.findOne({ _id: cardId, userId });
     if (!card) {
       res.status(404).json({ error: 'Workspace not found' });
       return;
@@ -177,8 +183,9 @@ export const reorderItems = async (req: Request, res: Response): Promise<void> =
 };
 
 // Sub-group handlers
-export const addSubGroup = async (req: Request, res: Response): Promise<void> => {
+export const addSubGroup = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const userId = req.user?.userId;
     const { cardId, itemId } = req.params;
     const { name, description } = req.body;
 
@@ -187,7 +194,7 @@ export const addSubGroup = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    const card = await CardModel.findById(cardId);
+    const card = await CardModel.findOne({ _id: cardId, userId });
     if (!card) {
       res.status(404).json({ error: 'Workspace not found' });
       return;
@@ -218,12 +225,13 @@ export const addSubGroup = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
-export const updateSubGroup = async (req: Request, res: Response): Promise<void> => {
+export const updateSubGroup = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const userId = req.user?.userId;
     const { cardId, itemId, subGroupId } = req.params;
     const { name, description } = req.body;
 
-    const card = await CardModel.findById(cardId);
+    const card = await CardModel.findOne({ _id: cardId, userId });
     if (!card) {
       res.status(404).json({ error: 'Workspace not found' });
       return;
@@ -251,11 +259,12 @@ export const updateSubGroup = async (req: Request, res: Response): Promise<void>
   }
 };
 
-export const deleteSubGroup = async (req: Request, res: Response): Promise<void> => {
+export const deleteSubGroup = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const userId = req.user?.userId;
     const { cardId, itemId, subGroupId } = req.params;
 
-    const card = await CardModel.findById(cardId);
+    const card = await CardModel.findOne({ _id: cardId, userId });
     if (!card) {
       res.status(404).json({ error: 'Workspace not found' });
       return;
@@ -276,12 +285,13 @@ export const deleteSubGroup = async (req: Request, res: Response): Promise<void>
   }
 };
 
-export const reorderSubGroups = async (req: Request, res: Response): Promise<void> => {
+export const reorderSubGroups = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const userId = req.user?.userId;
     const { cardId, itemId } = req.params;
     const { orderedSubGroupIds } = req.body as { orderedSubGroupIds: string[] };
 
-    const card = await CardModel.findById(cardId);
+    const card = await CardModel.findOne({ _id: cardId, userId });
     if (!card) {
       res.status(404).json({ error: 'Workspace not found' });
       return;

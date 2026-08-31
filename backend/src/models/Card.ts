@@ -41,6 +41,7 @@ export interface IItem {
 
 export interface ICard extends Document {
   id: string;
+  userId?: mongoose.Types.ObjectId | string;
   name: string;
   description: string;
   icon: string;
@@ -123,6 +124,7 @@ const ItemSchema = new Schema<IItem>(
 
 const CardSchema = new Schema<ICard>(
   {
+    userId: { type: Schema.Types.ObjectId, ref: 'User', index: true },
     name: { type: String, required: true, trim: true },
     description: { type: String, required: true, trim: true },
     icon: { type: String, default: 'FolderKanban' },
@@ -146,5 +148,6 @@ const CardSchema = new Schema<ICard>(
 );
 
 CardSchema.index({ name: 'text', description: 'text' });
+
 
 export const CardModel = mongoose.model<ICard>('Card', CardSchema);

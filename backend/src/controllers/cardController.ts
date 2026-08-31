@@ -1,18 +1,21 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
+import { AuthRequest } from '../middleware/authMiddleware.js';
 import { CardModel } from '../models/Card.js';
 
-export const getAllCards = async (req: Request, res: Response): Promise<void> => {
+export const getAllCards = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const cards = await CardModel.find().sort({ order: 1, updatedAt: -1 });
+    const userId = req.user?.userId;
+    const cards = await CardModel.find({ userId }).sort({ order: 1, updatedAt: -1 });
     res.json(cards);
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to fetch cards', details: error.message });
   }
 };
 
-export const getCardById = async (req: Request, res: Response): Promise<void> => {
+export const getCardById = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const card = await CardModel.findById(req.params.id);
+    const userId = req.user?.userId;
+    const card = await CardModel.findOne({ _id: req.params.id, userId });
     if (!card) {
       res.status(404).json({ error: 'Workspace card not found' });
       return;
@@ -23,16 +26,18 @@ export const getCardById = async (req: Request, res: Response): Promise<void> =>
   }
 };
 
-export const createCard = async (req: Request, res: Response): Promise<void> => {
+export const createCard = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const userId = req.user?.userId;
     const { name, description, icon, color, category } = req.body;
     if (!name) {
       res.status(400).json({ error: 'Workspace name is required' });
       return;
     }
 
-    const count = await CardModel.countDocuments();
+    const count = await CardModel.countDocuments({ userId });
     const newCard = new CardModel({
+      userId,
       name,
       description: description || '',
       icon: icon || 'FolderKanban',
@@ -49,10 +54,11 @@ export const createCard = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
-export const updateCard = async (req: Request, res: Response): Promise<void> => {
+export const updateCard = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const userId = req.user?.userId;
     const { name, description, icon, color, category, order } = req.body;
-    const card = await CardModel.findById(req.params.id);
+    const card = await CardModel.findOne({ _id: req.params.id, userId });
     if (!card) {
       res.status(404).json({ error: 'Workspace not found' });
       return;
@@ -72,9 +78,10 @@ export const updateCard = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
-export const deleteCard = async (req: Request, res: Response): Promise<void> => {
+export const deleteCard = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const result = await CardModel.findByIdAndDelete(req.params.id);
+    const userId = req.user?.userId;
+    const result = await CardModel.findOneAndDelete({ _id: req.params.id, userId });
     if (!result) {
       res.status(404).json({ error: 'Workspace not found' });
       return;
@@ -85,9 +92,10 @@ export const deleteCard = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
-export const duplicateCard = async (req: Request, res: Response): Promise<void> => {
+export const duplicateCard = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const source = await CardModel.findById(req.params.id);
+    const userId = req.user?.userId;
+    const source = await CardModel.findOne({ _id: req.params.id, userId });
     if (!source) {
       res.status(404).json({ error: 'Workspace not found' });
       return;
@@ -107,8 +115,9 @@ export const duplicateCard = async (req: Request, res: Response): Promise<void> 
       })),
     }));
 
-    const count = await CardModel.countDocuments();
+    const count = await CardModel.countDocuments({ userId });
     const duplicated = new CardModel({
+      userId,
       name: `${source.name} (Copy)`,
       description: source.description,
       icon: source.icon,
@@ -125,9 +134,10 @@ export const duplicateCard = async (req: Request, res: Response): Promise<void> 
   }
 };
 
-export const toggleFavoriteCard = async (req: Request, res: Response): Promise<void> => {
+export const toggleFavoriteCard = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const card = await CardModel.findById(req.params.id);
+    const userId = req.user?.userId;
+    const card = await CardModel.findOne({ _id: req.params.id, userId });
     if (!card) {
       res.status(404).json({ error: 'Workspace not found' });
       return;
@@ -138,8 +148,9 @@ export const toggleFavoriteCard = async (req: Request, res: Response): Promise<v
   }
 };
 
-export const reorderCards = async (req: Request, res: Response): Promise<void> => {
+export const reorderCards = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
+    const userId = req.user?.userId;
     const { orderedIds } = req.body as { orderedIds: string[] };
     if (!Array.isArray(orderedIds)) {
       res.status(400).json({ error: 'orderedIds array required' });
@@ -148,13 +159,13 @@ export const reorderCards = async (req: Request, res: Response): Promise<void> =
 
     const bulkOps = orderedIds.map((id, index) => ({
       updateOne: {
-        filter: { _id: id },
+        filter: { _id: id, userId },
         update: { $set: { order: index } },
       },
     }));
 
     await CardModel.bulkWrite(bulkOps);
-    const updatedCards = await CardModel.find().sort({ order: 1 });
+    const updatedCards = await CardModel.find({ userId }).sort({ order: 1 });
     res.json(updatedCards);
   } catch (error: any) {
     res.status(500).json({ error: 'Failed to reorder cards', details: error.message });

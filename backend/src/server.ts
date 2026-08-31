@@ -4,10 +4,13 @@ import express, { Request, Response } from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import { connectDB } from './config/db.js';
+import { authenticateToken } from './middleware/authMiddleware.js';
+import { authRouter } from './routes/authRoutes.js';
 import { cardRouter } from './routes/cardRoutes.js';
 import { itemRouter } from './routes/itemRoutes.js';
 import { resourceRouter } from './routes/resourceRoutes.js';
 import { statsRouter } from './routes/statsRoutes.js';
+import { assignExistingDataToDefaultUser } from './seeds/assignExistingData.js';
 
 // Load environment variables
 dotenv.config();
@@ -15,8 +18,10 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Connect to Database
-connectDB();
+// Connect to Database and assign existing data to default user
+connectDB().then(() => {
+  assignExistingDataToDefaultUser();
+});
 
 // Middleware
 app.use(helmet());
@@ -26,7 +31,7 @@ app.use(express.json());
 // CORS configuration (supports dev localhost + Render frontend URLs)
 const allowedOrigins = process.env.CLIENT_URL
   ? process.env.CLIENT_URL.split(',').map((url) => url.trim())
-  : ['http://localhost:5173', 'http://localhost:3000'];
+  : ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:5174'];
 
 app.use(
   cors({
@@ -51,12 +56,15 @@ app.get(['/api/health', '/healthz'], (_req: Request, res: Response) => {
   });
 });
 
-// API Routes
-app.use('/api/cards', cardRouter);
-app.use('/api/cards', itemRouter);
-app.use('/api/cards', resourceRouter);
-app.use('/api', resourceRouter);
-app.use('/api', statsRouter);
+// Public Authentication Routes
+app.use('/api', authRouter);
+
+// Protected API Routes
+app.use('/api/cards', authenticateToken as any, cardRouter);
+app.use('/api/cards', authenticateToken as any, itemRouter);
+app.use('/api/cards', authenticateToken as any, resourceRouter);
+app.use('/api', authenticateToken as any, resourceRouter);
+app.use('/api', authenticateToken as any, statsRouter);
 
 // 404 Route
 app.use((_req: Request, res: Response) => {

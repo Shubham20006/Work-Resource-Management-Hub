@@ -1,11 +1,5 @@
-import {
-  Menu,
-  Moon,
-  Plus,
-  Search,
-  Sun,
-} from 'lucide-react';
-import React from 'react';
+import { LogOut, Menu, Moon, Plus, Search, Sun, User } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../hooks/useTheme';
 import { Breadcrumbs } from './Breadcrumbs';
 
@@ -17,6 +11,7 @@ interface HeaderProps {
 
 export function Header({ onToggleSidebar, onOpenSearch, onOpenAddCard }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
+  const { user, logout } = useAuth();
 
   return (
     <header className="sticky top-0 z-30 flex h-14 w-full items-center justify-between border-b border-border bg-card/85 backdrop-blur-md px-4 sm:px-6 shadow-2xs transition-colors shrink-0">
@@ -33,7 +28,7 @@ export function Header({ onToggleSidebar, onOpenSearch, onOpenAddCard }: HeaderP
         <Breadcrumbs />
       </div>
 
-      {/* Right: Search, Theme Toggle & Add Button */}
+      {/* Right: Search, Theme Toggle, User Profile & Add Button */}
       <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
         {/* Global Search Button */}
         <button
@@ -63,6 +58,27 @@ export function Header({ onToggleSidebar, onOpenSearch, onOpenAddCard }: HeaderP
             <Moon className="h-4 w-4 text-indigo-600" />
           )}
         </button>
+
+        {/* User Pill & Logout */}
+        {user && (
+          <div className="flex items-center gap-1 bg-muted/40 border border-border rounded-xl px-2.5 py-1">
+            <div className="flex items-center gap-1.5 max-w-[140px] sm:max-w-[200px] truncate text-xs text-foreground font-medium">
+              <div className="h-5 w-5 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-[10px] shrink-0">
+                {user.name ? user.name[0].toUpperCase() : <User className="h-3 w-3" />}
+              </div>
+              <span className="truncate hidden sm:inline" title={user.email}>
+                {user.email}
+              </span>
+            </div>
+            <button
+              onClick={logout}
+              className="h-6 w-6 ml-1 flex items-center justify-center rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer"
+              title="Logout"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* Add Workspace Button */}
         <button

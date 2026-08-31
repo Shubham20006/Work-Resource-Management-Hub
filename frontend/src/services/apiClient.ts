@@ -1,15 +1,42 @@
-import { Card, Item, Resource, SubGroup } from '../types';
+import { AuthResponse, Card, Item, LoginCredentials, Resource, SignUpCredentials, SubGroup, User } from '../types';
 
 const API_BASE_URL = 'https://work-resource-management-hub.onrender.com/api';
 
+export function getStoredToken(): string | null {
+  return localStorage.getItem('workhub_token');
+}
+
+export function setStoredToken(token: string | null): void {
+  if (token) {
+    localStorage.setItem('workhub_token', token);
+  } else {
+    localStorage.removeItem('workhub_token');
+  }
+}
+
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
+  const token = getStoredToken();
+  const authHeaders: Record<string, string> = {};
+  if (token) {
+    authHeaders['Authorization'] = `Bearer ${token}`;
+  }
+
   const res = await fetch(`${API_BASE_URL}${url}`, {
     headers: {
       'Content-Type': 'application/json',
+      ...authHeaders,
       ...options?.headers,
     },
     ...options,
   });
+
+  if (res.status === 401) {
+    // Unauthenticated or expired token
+    const errBody = await res.json().catch(() => ({}));
+    setStoredToken(null);
+    window.dispatchEvent(new Event('auth:unauthorized'));
+    throw new Error(errBody.error || 'Session expired. Please log in again.');
+  }
 
   if (!res.ok) {
     const errBody = await res.json().catch(() => ({}));
@@ -28,6 +55,21 @@ export const apiClient = {
       return false;
     }
   },
+
+  // Auth
+  login: (credentials: LoginCredentials) =>
+    fetchJson<AuthResponse>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials),
+    }),
+
+  signup: (credentials: SignUpCredentials) =>
+    fetchJson<AuthResponse>('/auth/signup', {
+      method: 'POST',
+      body: JSON.stringify(credentials),
+    }),
+
+  getMe: () => fetchJson<{ user: User }>('/auth/me'),
 
   // Cards
   getAllCards: () => fetchJson<Card[]>('/cards'),
