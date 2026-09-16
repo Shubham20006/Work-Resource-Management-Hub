@@ -811,33 +811,31 @@ export function WorkspacePage() {
                                             </div>
 
                                             <div className="min-w-0 space-y-0.5">
-                                              <div className="flex items-center gap-2">
+                                              <div className="flex items-center gap-2.5 flex-wrap">
                                                 <span className="font-bold text-xs sm:text-sm text-foreground">
                                                   {res.name}
                                                 </span>
+                                                {/* Email Chips (Directly shown without label) */}
+                                                {Array.isArray(res.emailsUsed) && res.emailsUsed.length > 0 && (
+                                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                                    {res.emailsUsed.map((email) => (
+                                                      <button
+                                                        key={email}
+                                                        onClick={() => handleCopyEmail(email)}
+                                                        className="inline-flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded-md bg-muted/60 text-foreground border border-border/60 hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer"
+                                                        title="Click to copy email"
+                                                      >
+                                                        <Mail className="h-3 w-3 text-muted-foreground" />
+                                                        <span>{email}</span>
+                                                      </button>
+                                                    ))}
+                                                  </div>
+                                                )}
                                               </div>
                                               {res.description && (
                                                 <p className="text-[11px] text-muted-foreground">
                                                   {res.description}
                                                 </p>
-                                              )}
-                                              {/* Emails Used Chips */}
-                                              {Array.isArray(res.emailsUsed) && res.emailsUsed.length > 0 && (
-                                                <div className="flex items-center gap-1.5 pt-1 flex-wrap">
-                                                  <span className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1">
-                                                    <Mail className="h-3 w-3" /> Emails:
-                                                  </span>
-                                                  {res.emailsUsed.map((email) => (
-                                                    <button
-                                                      key={email}
-                                                      onClick={() => handleCopyEmail(email)}
-                                                      className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted/60 text-foreground border border-border/60 hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer"
-                                                      title="Click to copy email"
-                                                    >
-                                                      {email}
-                                                    </button>
-                                                  ))}
-                                                </div>
                                               )}
                                             </div>
                                           </div>
@@ -979,10 +977,26 @@ export function WorkspacePage() {
                                 </div>
 
                                 <div className="min-w-0 space-y-1">
-                                  <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2.5 flex-wrap">
                                     <span className="font-bold text-sm text-foreground">
                                       {res.name}
                                     </span>
+                                    {/* Email Chips (Directly shown without label) */}
+                                    {Array.isArray(res.emailsUsed) && res.emailsUsed.length > 0 && (
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        {res.emailsUsed.map((email) => (
+                                          <button
+                                            key={email}
+                                            onClick={() => handleCopyEmail(email)}
+                                            className="inline-flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded-md bg-muted/60 text-foreground border border-border/60 hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer"
+                                            title="Click to copy email"
+                                          >
+                                            <Mail className="h-3 w-3 text-muted-foreground" />
+                                            <span>{email}</span>
+                                          </button>
+                                        ))}
+                                      </div>
+                                    )}
                                   </div>
 
                                   {res.description && (
@@ -991,24 +1005,6 @@ export function WorkspacePage() {
                                     </p>
                                   )}
 
-                                  {/* Emails Used Chips */}
-                                  {Array.isArray(res.emailsUsed) && res.emailsUsed.length > 0 && (
-                                    <div className="flex items-center gap-1.5 pt-1 flex-wrap">
-                                      <span className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1">
-                                        <Mail className="h-3 w-3" /> Emails Used:
-                                      </span>
-                                      {res.emailsUsed.map((email) => (
-                                        <button
-                                          key={email}
-                                          onClick={() => handleCopyEmail(email)}
-                                          className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-muted/60 text-foreground border border-border/60 hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer"
-                                          title="Click to copy email"
-                                        >
-                                          {email}
-                                        </button>
-                                      ))}
-                                    </div>
-                                  )}
                                 </div>
                               </div>
 

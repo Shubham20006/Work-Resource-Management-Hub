@@ -39,6 +39,7 @@ export const addResource = async (req: AuthRequest, res: Response): Promise<void
         return;
       }
       subGroup.resources.push(newResource as any);
+      card.markModified('items');
       await card.save();
       const created = subGroup.resources[subGroup.resources.length - 1];
       res.status(201).json(created);
@@ -46,6 +47,7 @@ export const addResource = async (req: AuthRequest, res: Response): Promise<void
     }
 
     item.resources.push(newResource as any);
+    card.markModified('items');
     await card.save();
 
     const created = item.resources[item.resources.length - 1];
@@ -96,6 +98,7 @@ export const updateResource = async (req: AuthRequest, res: Response): Promise<v
     if (updates.url !== undefined) resItem.url = updates.url;
     if (updates.emailsUsed !== undefined) resItem.emailsUsed = updates.emailsUsed;
 
+    card.markModified('items');
     await card.save();
     res.json(resItem);
   } catch (error: any) {
@@ -134,6 +137,7 @@ export const deleteResource = async (req: AuthRequest, res: Response): Promise<v
       }
     }
 
+    card.markModified('items');
     await card.save();
     res.json({ message: 'Resource deleted', resourceId });
   } catch (error: any) {
@@ -194,6 +198,7 @@ export const moveResource = async (req: AuthRequest, res: Response): Promise<voi
     } else {
       sourceItem.resources = (sourceItem.resources as any).filter((r: any) => r._id.toString() !== resourceId);
     }
+    sourceCard.markModified('items');
     await sourceCard.save();
 
     // Find target card & item
@@ -214,6 +219,7 @@ export const moveResource = async (req: AuthRequest, res: Response): Promise<voi
     }
 
     targetItem.resources.push(resData);
+    targetCard.markModified('items');
     await targetCard.save();
 
     res.json({
@@ -281,6 +287,7 @@ export const moveResourceBetweenGroupAndSubGroup = async (req: AuthRequest, res:
       item.resources.push(resourceData);
     }
 
+    card.markModified('items');
     await card.save();
     res.json({ message: 'Link moved successfully', item });
   } catch (error: any) {
@@ -343,6 +350,7 @@ export const reorderResources = async (req: AuthRequest, res: Response): Promise
       item.resources = reordered;
     }
 
+    card.markModified('items');
     await card.save();
 
     res.json({ message: 'Resources reordered successfully', resources: reordered });
