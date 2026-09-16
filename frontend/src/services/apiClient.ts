@@ -1,4 +1,4 @@
-import { AuthResponse, Card, Item, LoginCredentials, Resource, SignUpCredentials, SubGroup, User } from '../types';
+import { AuthResponse, Card, Item, LoginCredentials, Resource, SignUpCredentials, SubGroup, User, SharedWith } from '../types';
 
 const API_BASE_URL = 'https://work-resource-management-hub.onrender.com/api';
 
@@ -130,7 +130,7 @@ export const apiClient = {
     }),
 
   // SubGroups
-  addSubGroup: (cardId: string, itemId: string, data: { name: string; description?: string }) =>
+  addSubGroup: (cardId: string, itemId: string, data: { name: string; description?: string; sharedWith?: SharedWith[] }) =>
     fetchJson<SubGroup>(`/cards/${cardId}/items/${itemId}/subgroups`, {
       method: 'POST',
       body: JSON.stringify(data),
@@ -139,7 +139,7 @@ export const apiClient = {
     cardId: string,
     itemId: string,
     subGroupId: string,
-    updates: { name?: string; description?: string }
+    updates: { name?: string; description?: string; sharedWith?: SharedWith[] }
   ) =>
     fetchJson<SubGroup>(`/cards/${cardId}/items/${itemId}/subgroups/${subGroupId}`, {
       method: 'PUT',

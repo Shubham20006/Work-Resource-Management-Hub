@@ -14,7 +14,7 @@ import { SubGroup, SharedWith } from '../../types';
 const subGroupSchema = z.object({
   name: z.string().min(2, 'Sub-group name must be at least 2 characters').max(80),
   description: z.string().max(300).optional(),
-  sharedWith: z.array(z.object({ userId: z.string(), role: z.enum(['viewer', 'editor']) })).default([]),
+  sharedWith: z.array(z.object({ userId: z.string(), role: z.enum(['viewer', 'editor']) })).optional(),
 });
 
 type SubGroupFormData = z.infer<typeof subGroupSchema>;
@@ -80,7 +80,7 @@ export function SubGroupFormModal({
           updates: {
             name: data.name,
             description: data.description || '',
-            sharedWith: data.sharedWith,
+            sharedWith: data.sharedWith as SharedWith[] | undefined,
           },
         });
       } else {
@@ -90,8 +90,8 @@ export function SubGroupFormModal({
           data: {
             name: data.name,
             description: data.description || '',
-            sharedWith: data.sharedWith,
-          } as any,
+            sharedWith: data.sharedWith as SharedWith[] | undefined,
+          },
         });
       }
       onClose();
@@ -138,7 +138,7 @@ export function SubGroupFormModal({
           control={control}
           render={({ field }) => (
             <UserShareSelect
-              value={field.value || []}
+              value={(field.value as SharedWith[]) || []}
               onChange={field.onChange}
               currentUserEmail={currentUser?.email}
             />

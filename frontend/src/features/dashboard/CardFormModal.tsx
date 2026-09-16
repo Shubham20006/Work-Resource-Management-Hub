@@ -184,7 +184,7 @@ export function CardFormModal({ isOpen, onClose, cardToEdit }: CardFormModalProp
           control={control}
           render={({ field }) => (
             <UserShareSelect
-              value={field.value}
+              value={(field.value as SharedWith[]) || []}
               onChange={field.onChange}
               currentUserEmail={currentUser?.email}
             />

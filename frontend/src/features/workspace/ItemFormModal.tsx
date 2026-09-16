@@ -17,7 +17,7 @@ const itemSchema = z.object({
   description: z.string().max(300).optional(),
   githubUrl: z.string().optional(),
   resourceUrl: z.string().optional(),
-  sharedWith: z.array(z.object({ userId: z.string(), role: z.enum(['viewer', 'editor']) })).default([]),
+  sharedWith: z.array(z.object({ userId: z.string(), role: z.enum(['viewer', 'editor']) })).optional(),
 });
 
 type ItemFormData = z.infer<typeof itemSchema>;
@@ -82,7 +82,7 @@ export function ItemFormModal({ isOpen, onClose, cardId, cardCategory, itemToEdi
             description: data.description || '',
             githubUrl: isProject ? data.githubUrl?.trim() || '' : '',
             resourceUrl: !isProject ? data.resourceUrl?.trim() || '' : '',
-            sharedWith: data.sharedWith,
+            sharedWith: data.sharedWith as SharedWith[] | undefined,
           },
         });
       } else {
@@ -93,8 +93,8 @@ export function ItemFormModal({ isOpen, onClose, cardId, cardCategory, itemToEdi
             description: data.description || '',
             githubUrl: isProject ? data.githubUrl?.trim() || undefined : undefined,
             resourceUrl: !isProject ? data.resourceUrl?.trim() || undefined : undefined,
-            sharedWith: data.sharedWith,
-          } as any, // Type cast to bypass frontend missing optional
+            sharedWith: data.sharedWith as SharedWith[] | undefined,
+          },
         });
       }
       onClose();
@@ -177,7 +177,7 @@ export function ItemFormModal({ isOpen, onClose, cardId, cardCategory, itemToEdi
           control={control}
           render={({ field }) => (
             <UserShareSelect
-              value={field.value || []}
+              value={(field.value as SharedWith[]) || []}
               onChange={field.onChange}
               currentUserEmail={currentUser?.email}
             />

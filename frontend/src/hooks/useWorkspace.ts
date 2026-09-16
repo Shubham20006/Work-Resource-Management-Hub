@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { apiClient } from '../services/apiClient';
-import { Item, Resource } from '../types';
+import { Item, Resource, SharedWith } from '../types';
 import { CARD_KEYS } from './useCards';
 
 export function useAddItem() {
@@ -107,7 +107,7 @@ export function useAddSubGroup() {
     }: {
       cardId: string;
       itemId: string;
-      data: { name: string; description?: string };
+      data: { name: string; description?: string; sharedWith?: SharedWith[] };
     }) => apiClient.addSubGroup(cardId, itemId, data),
     onSuccess: (newSubGroup, variables) => {
       queryClient.invalidateQueries({ queryKey: CARD_KEYS.all });
@@ -133,7 +133,7 @@ export function useUpdateSubGroup() {
       cardId: string;
       itemId: string;
       subGroupId: string;
-      updates: { name?: string; description?: string };
+      updates: { name?: string; description?: string; sharedWith?: SharedWith[] };
     }) => apiClient.updateSubGroup(cardId, itemId, subGroupId, updates),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: CARD_KEYS.all });
