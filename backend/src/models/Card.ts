@@ -13,6 +13,11 @@ export interface IResource {
   updatedAt: Date;
 }
 
+export interface ISharedWith {
+  userId: mongoose.Types.ObjectId | string;
+  role: 'viewer' | 'editor';
+}
+
 export interface ISubGroup {
   id: string;
   itemId?: string;
@@ -21,6 +26,7 @@ export interface ISubGroup {
   description?: string;
   order: number;
   resources: IResource[];
+  sharedWith?: ISharedWith[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -35,6 +41,7 @@ export interface IItem {
   order: number;
   resources: IResource[];
   subGroups: ISubGroup[];
+  sharedWith?: ISharedWith[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -49,9 +56,18 @@ export interface ICard extends Document {
   category: string;
   order: number;
   items: IItem[];
+  sharedWith?: ISharedWith[];
   createdAt: Date;
   updatedAt: Date;
 }
+
+const SharedWithSchema = new Schema(
+  {
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    role: { type: String, enum: ['viewer', 'editor'], default: 'viewer' },
+  },
+  { _id: false }
+);
 
 const ResourceSchema = new Schema<IResource>(
   {
@@ -81,6 +97,7 @@ const SubGroupSchema = new Schema<ISubGroup>(
     description: { type: String, default: '' },
     order: { type: Number, default: 0 },
     resources: { type: [ResourceSchema], default: [] },
+    sharedWith: { type: [SharedWithSchema], default: [] },
   },
   {
     timestamps: true,
@@ -106,6 +123,7 @@ const ItemSchema = new Schema<IItem>(
     order: { type: Number, default: 0 },
     resources: { type: [ResourceSchema], default: [] },
     subGroups: { type: [SubGroupSchema], default: [] },
+    sharedWith: { type: [SharedWithSchema], default: [] },
   },
   {
     timestamps: true,
@@ -132,6 +150,7 @@ const CardSchema = new Schema<ICard>(
     category: { type: String, default: 'Other' },
     order: { type: Number, default: 0 },
     items: { type: [ItemSchema], default: [] },
+    sharedWith: { type: [SharedWithSchema], default: [] },
   },
   {
     timestamps: true,

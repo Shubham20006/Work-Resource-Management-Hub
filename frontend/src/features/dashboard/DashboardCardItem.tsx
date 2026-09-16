@@ -1,11 +1,12 @@
 import { Edit2, ExternalLink, Trash2 } from 'lucide-react';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '../../components/ui/Badge';
 import { getColorClasses } from '../../components/ui/ColorPicker';
 import { IconRenderer } from '../../components/ui/IconRenderer';
 import { Card } from '../../types';
 import { cn } from '../../utils/cn';
+import { useAuth } from '../../context/AuthContext';
 
 interface DashboardCardItemProps {
   card: Card;
@@ -15,7 +16,14 @@ interface DashboardCardItemProps {
 
 export function DashboardCardItem({ card, onEdit, onDelete }: DashboardCardItemProps) {
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
   const colorConfig = getColorClasses(card.color);
+
+  const canEditCard = useMemo(() => {
+    if (!currentUser) return false;
+    if (card.userId === currentUser.id) return true;
+    return card.sharedWith?.some((sw) => sw.userId === currentUser.id && sw.role === 'editor') || false;
+  }, [card, currentUser]);
 
   const isProjects = card.category === 'Projects';
   const itemCountLabel = isProjects
@@ -56,22 +64,24 @@ export function DashboardCardItem({ card, onEdit, onDelete }: DashboardCardItemP
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={() => onEdit(card)}
-              className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
-              title="Edit Workspace"
-            >
-              <Edit2 className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => onDelete(card)}
-              className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
-              title="Delete Workspace"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
+          {canEditCard && (
+            <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+              <button
+                onClick={() => onEdit(card)}
+                className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                title="Edit Workspace"
+              >
+                <Edit2 className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => onDelete(card)}
+                className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                title="Delete Workspace"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Description */}

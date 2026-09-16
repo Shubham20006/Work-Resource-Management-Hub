@@ -20,7 +20,7 @@ export const getStats = async (req: AuthRequest, res: Response): Promise<void> =
       totalResources,
     });
   } catch (error: any) {
-    res.status(500).json({ error: 'Failed to fetch stats', details: error.message });
+    res.status(500).json({ error: 'We couldn\'t load your statistics right now. Please try again later.', details: error.message });
   }
 };
 
@@ -32,6 +32,6 @@ export const seedDatabase = async (req: AuthRequest, res: Response): Promise<voi
     const created = await CardModel.insertMany(userSeedCards);
     res.json({ message: 'Database reset and seeded with clean datasets', count: created.length });
   } catch (error: any) {
-    res.status(500).json({ error: 'Failed to seed database', details: error.message });
+    res.status(500).json({ error: 'We couldn\'t reset the database. Please try again.', details: error.message });
   }
 };

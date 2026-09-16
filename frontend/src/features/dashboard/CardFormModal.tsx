@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import React, { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '../../components/ui/Button';
 import { ColorPicker } from '../../components/ui/ColorPicker';
@@ -8,8 +8,10 @@ import { AVAILABLE_ICONS } from '../../components/ui/IconRenderer';
 import { Input } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';
 import { Textarea } from '../../components/ui/Textarea';
+import { UserShareSelect } from '../../components/ui/UserShareSelect';
 import { useCreateCard, useUpdateCard } from '../../hooks/useCards';
-import { Card } from '../../types';
+import { useAuth } from '../../context/AuthContext';
+import { Card, SharedWith } from '../../types';
 
 interface CardFormInputs {
   name: string;
@@ -17,6 +19,7 @@ interface CardFormInputs {
   icon: string;
   color: string;
   category: string;
+  sharedWith: SharedWith[];
 }
 
 const cardSchema = z.object({
@@ -25,6 +28,7 @@ const cardSchema = z.object({
   icon: z.string().min(1, 'Please select an icon'),
   color: z.string().min(1, 'Please select a color'),
   category: z.string().min(1, 'Please select a category'),
+  sharedWith: z.array(z.object({ userId: z.string(), role: z.enum(['viewer', 'editor']) })).default([]),
 });
 
 interface CardFormModalProps {
@@ -39,6 +43,7 @@ export function CardFormModal({ isOpen, onClose, cardToEdit }: CardFormModalProp
   const isEditing = !!cardToEdit;
   const createMutation = useCreateCard();
   const updateMutation = useUpdateCard();
+  const { user: currentUser } = useAuth();
 
   const {
     register,
@@ -46,6 +51,7 @@ export function CardFormModal({ isOpen, onClose, cardToEdit }: CardFormModalProp
     setValue,
     watch,
     reset,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<CardFormInputs>({
     resolver: zodResolver(cardSchema) as any,
@@ -55,6 +61,7 @@ export function CardFormModal({ isOpen, onClose, cardToEdit }: CardFormModalProp
       icon: 'FolderKanban',
       color: 'indigo',
       category: 'Projects',
+      sharedWith: [],
     },
   });
 
@@ -70,6 +77,7 @@ export function CardFormModal({ isOpen, onClose, cardToEdit }: CardFormModalProp
         icon: cardToEdit.icon || 'FolderKanban',
         color: cardToEdit.color || 'indigo',
         category: cardToEdit.category || 'Projects',
+        sharedWith: cardToEdit.sharedWith || [],
       });
     } else {
       reset({
@@ -78,6 +86,7 @@ export function CardFormModal({ isOpen, onClose, cardToEdit }: CardFormModalProp
         icon: 'FolderKanban',
         color: 'indigo',
         category: 'Projects',
+        sharedWith: [],
       });
     }
   }, [cardToEdit, isOpen, reset]);
@@ -93,6 +102,7 @@ export function CardFormModal({ isOpen, onClose, cardToEdit }: CardFormModalProp
             icon: data.icon,
             color: data.color,
             category: data.category,
+            sharedWith: data.sharedWith,
           },
         });
       } else {
@@ -102,7 +112,8 @@ export function CardFormModal({ isOpen, onClose, cardToEdit }: CardFormModalProp
           icon: data.icon,
           color: data.color,
           category: data.category || 'Other',
-        });
+          sharedWith: data.sharedWith,
+        } as any); // Type cast since backend accepts it but frontend type might miss it on omit
       }
       onClose();
     } catch (err) {
@@ -167,6 +178,19 @@ export function CardFormModal({ isOpen, onClose, cardToEdit }: CardFormModalProp
           </div>
         </div>
 
+        {/* Share With Users */}
+        <Controller
+          name="sharedWith"
+          control={control}
+          render={({ field }) => (
+            <UserShareSelect
+              value={field.value}
+              onChange={field.onChange}
+              currentUserEmail={currentUser?.email}
+            />
+          )}
+        />
+
         {/* Color Accent */}
         <div>
           <label className="block text-xs font-semibold text-foreground mb-1">Color Accent</label>
@@ -212,3 +236,4 @@ export function CardFormModal({ isOpen, onClose, cardToEdit }: CardFormModalProp
     </Modal>
   );
 }
+

@@ -1,17 +1,20 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import React, { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';
 import { Textarea } from '../../components/ui/Textarea';
+import { UserShareSelect } from '../../components/ui/UserShareSelect';
 import { useAddSubGroup, useUpdateSubGroup } from '../../hooks/useWorkspace';
-import { SubGroup } from '../../types';
+import { useAuth } from '../../context/AuthContext';
+import { SubGroup, SharedWith } from '../../types';
 
 const subGroupSchema = z.object({
   name: z.string().min(2, 'Sub-group name must be at least 2 characters').max(80),
   description: z.string().max(300).optional(),
+  sharedWith: z.array(z.object({ userId: z.string(), role: z.enum(['viewer', 'editor']) })).default([]),
 });
 
 type SubGroupFormData = z.infer<typeof subGroupSchema>;
@@ -36,17 +39,20 @@ export function SubGroupFormModal({
   const isEditing = !!subGroupToEdit;
   const addSubGroupMutation = useAddSubGroup();
   const updateSubGroupMutation = useUpdateSubGroup();
+  const { user: currentUser } = useAuth();
 
   const {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<SubGroupFormData>({
     resolver: zodResolver(subGroupSchema),
     defaultValues: {
       name: '',
       description: '',
+      sharedWith: [],
     },
   });
 
@@ -56,9 +62,10 @@ export function SubGroupFormModal({
         reset({
           name: subGroupToEdit.name,
           description: subGroupToEdit.description || '',
+          sharedWith: subGroupToEdit.sharedWith || [],
         });
       } else {
-        reset({ name: '', description: '' });
+        reset({ name: '', description: '', sharedWith: [] });
       }
     }
   }, [isOpen, subGroupToEdit, reset]);
@@ -73,6 +80,7 @@ export function SubGroupFormModal({
           updates: {
             name: data.name,
             description: data.description || '',
+            sharedWith: data.sharedWith,
           },
         });
       } else {
@@ -82,7 +90,8 @@ export function SubGroupFormModal({
           data: {
             name: data.name,
             description: data.description || '',
-          },
+            sharedWith: data.sharedWith,
+          } as any,
         });
       }
       onClose();
@@ -123,6 +132,19 @@ export function SubGroupFormModal({
           />
         </div>
 
+        {/* Share With Users */}
+        <Controller
+          name="sharedWith"
+          control={control}
+          render={({ field }) => (
+            <UserShareSelect
+              value={field.value || []}
+              onChange={field.onChange}
+              currentUserEmail={currentUser?.email}
+            />
+          )}
+        />
+
         {/* Form Actions */}
         <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-border/60">
           <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>
@@ -139,3 +161,4 @@ export function SubGroupFormModal({
     </Modal>
   );
 }
+

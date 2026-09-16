@@ -1,20 +1,23 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FileSpreadsheet, FolderGit2 } from 'lucide-react';
 import React, { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';
 import { Textarea } from '../../components/ui/Textarea';
+import { UserShareSelect } from '../../components/ui/UserShareSelect';
 import { useAddItem, useUpdateItem } from '../../hooks/useWorkspace';
-import { Item } from '../../types';
+import { useAuth } from '../../context/AuthContext';
+import { Item, SharedWith } from '../../types';
 
 const itemSchema = z.object({
   name: z.string().min(2, 'Name / Title must be at least 2 characters').max(80),
   description: z.string().max(300).optional(),
   githubUrl: z.string().optional(),
   resourceUrl: z.string().optional(),
+  sharedWith: z.array(z.object({ userId: z.string(), role: z.enum(['viewer', 'editor']) })).default([]),
 });
 
 type ItemFormData = z.infer<typeof itemSchema>;
@@ -31,6 +34,7 @@ export function ItemFormModal({ isOpen, onClose, cardId, cardCategory, itemToEdi
   const isEditing = !!itemToEdit;
   const addItemMutation = useAddItem();
   const updateItemMutation = useUpdateItem();
+  const { user: currentUser } = useAuth();
 
   const isProject = cardCategory === 'Projects';
 
@@ -38,6 +42,7 @@ export function ItemFormModal({ isOpen, onClose, cardId, cardCategory, itemToEdi
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<ItemFormData>({
     resolver: zodResolver(itemSchema),
@@ -46,6 +51,7 @@ export function ItemFormModal({ isOpen, onClose, cardId, cardCategory, itemToEdi
       description: '',
       githubUrl: '',
       resourceUrl: '',
+      sharedWith: [],
     },
   });
 
@@ -57,9 +63,10 @@ export function ItemFormModal({ isOpen, onClose, cardId, cardCategory, itemToEdi
           description: itemToEdit.description || '',
           githubUrl: itemToEdit.githubUrl || '',
           resourceUrl: itemToEdit.resourceUrl || '',
+          sharedWith: itemToEdit.sharedWith || [],
         });
       } else {
-        reset({ name: '', description: '', githubUrl: '', resourceUrl: '' });
+        reset({ name: '', description: '', githubUrl: '', resourceUrl: '', sharedWith: [] });
       }
     }
   }, [isOpen, itemToEdit, reset]);
@@ -75,6 +82,7 @@ export function ItemFormModal({ isOpen, onClose, cardId, cardCategory, itemToEdi
             description: data.description || '',
             githubUrl: isProject ? data.githubUrl?.trim() || '' : '',
             resourceUrl: !isProject ? data.resourceUrl?.trim() || '' : '',
+            sharedWith: data.sharedWith,
           },
         });
       } else {
@@ -85,7 +93,8 @@ export function ItemFormModal({ isOpen, onClose, cardId, cardCategory, itemToEdi
             description: data.description || '',
             githubUrl: isProject ? data.githubUrl?.trim() || undefined : undefined,
             resourceUrl: !isProject ? data.resourceUrl?.trim() || undefined : undefined,
-          },
+            sharedWith: data.sharedWith,
+          } as any, // Type cast to bypass frontend missing optional
         });
       }
       onClose();
@@ -162,6 +171,19 @@ export function ItemFormModal({ isOpen, onClose, cardId, cardCategory, itemToEdi
           </div>
         )}
 
+        {/* Share With Users */}
+        <Controller
+          name="sharedWith"
+          control={control}
+          render={({ field }) => (
+            <UserShareSelect
+              value={field.value || []}
+              onChange={field.onChange}
+              currentUserEmail={currentUser?.email}
+            />
+          )}
+        />
+
         {/* Form Actions */}
         <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-border/60">
           <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>
@@ -175,3 +197,4 @@ export function ItemFormModal({ isOpen, onClose, cardId, cardCategory, itemToEdi
     </Modal>
   );
 }
+

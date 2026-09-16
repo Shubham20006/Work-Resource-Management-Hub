@@ -70,6 +70,7 @@ export const apiClient = {
     }),
 
   getMe: () => fetchJson<{ user: User }>('/auth/me'),
+  getUsers: () => fetchJson<User[]>('/auth/users'),
 
   // Cards
   getAllCards: () => fetchJson<Card[]>('/cards'),

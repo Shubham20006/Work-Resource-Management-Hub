@@ -25,6 +25,7 @@ import { Button } from '../../components/ui/Button';
 import { getColorClasses } from '../../components/ui/ColorPicker';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { IconRenderer } from '../../components/ui/IconRenderer';
+import { useAuth } from '../../context/AuthContext';
 import { CardFormModal } from '../dashboard/CardFormModal';
 import { DeleteCardDialog } from '../dashboard/DeleteCardDialog';
 import { useCard } from '../../hooks/useCards';
@@ -48,6 +49,25 @@ export function WorkspacePage() {
   const { cardId } = useParams<{ cardId: string }>();
   const navigate = useNavigate();
   const { data: card, isLoading, isError } = useCard(cardId);
+  const { user: currentUser } = useAuth();
+
+  const canEditCard = useMemo(() => {
+    if (!card || !currentUser) return false;
+    if (card.userId === currentUser.id) return true;
+    return card.sharedWith?.some(sw => sw.userId === currentUser.id && sw.role === 'editor') || false;
+  }, [card, currentUser]);
+
+  const canEditItem = (item: Item) => {
+    if (canEditCard) return true;
+    if (!currentUser) return false;
+    return item.sharedWith?.some(sw => sw.userId === currentUser.id && sw.role === 'editor') || false;
+  };
+
+  const canEditSubGroup = (item: Item, subGroup: SubGroup) => {
+    if (canEditItem(item)) return true;
+    if (!currentUser) return false;
+    return subGroup.sharedWith?.some(sw => sw.userId === currentUser.id && sw.role === 'editor') || false;
+  };
 
   // Mutations
   const deleteItemMutation = useDeleteItem();
@@ -347,24 +367,28 @@ export function WorkspacePage() {
         </Link>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setIsEditCardModalOpen(true)}
-            className="text-xs gap-1.5 cursor-pointer"
-          >
-            <Edit2 className="h-3.5 w-3.5" />
-            <span>Edit Workspace</span>
-          </Button>
+          {canEditCard && (
+            <>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsEditCardModalOpen(true)}
+                className="text-xs gap-1.5 cursor-pointer"
+              >
+                <Edit2 className="h-3.5 w-3.5" />
+                <span>Edit Workspace</span>
+              </Button>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsDeleteCardModalOpen(true)}
-            className="text-xs text-destructive hover:bg-destructive/10 cursor-pointer"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsDeleteCardModalOpen(true)}
+                className="text-xs text-destructive hover:bg-destructive/10 cursor-pointer"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -399,16 +423,18 @@ export function WorkspacePage() {
           </div>
 
           <div className="flex items-center gap-3 self-start md:self-center shrink-0">
-            <Button
-              onClick={() => {
-                setItemToEdit(null);
-                setIsAddItemModalOpen(true);
-              }}
-              className="gap-2 shadow-xs cursor-pointer"
-            >
-              <Plus className="h-4 w-4" />
-              <span>{isProjects ? 'Add Subproject' : 'Add Group'}</span>
-            </Button>
+            {canEditCard && (
+              <Button
+                onClick={() => {
+                  setItemToEdit(null);
+                  setIsAddItemModalOpen(true);
+                }}
+                className="gap-2 shadow-xs cursor-pointer"
+              >
+                <Plus className="h-4 w-4" />
+                <span>{isProjects ? 'Add Subproject' : 'Add Group'}</span>
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -498,7 +524,7 @@ export function WorkspacePage() {
             return (
               <div
                 key={item.id}
-                draggable
+                draggable={canEditItem(item)}
                 onDragStart={(e) => handleGroupDragStart(e, item.id)}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => handleGroupDrop(e, item.id)}
@@ -511,12 +537,14 @@ export function WorkspacePage() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-muted/30 border-b border-border/60 gap-3 select-none">
                   <div className="flex items-center gap-2.5 min-w-0">
                     {/* Drag Handle */}
-                    <div
-                      className="cursor-grab active:cursor-grabbing text-muted-foreground/60 hover:text-foreground p-0.5 rounded transition-colors shrink-0"
-                      title="Drag to reorder group"
-                    >
-                      <GripVertical className="h-4.5 w-4.5" />
-                    </div>
+                    {canEditItem(item) && (
+                      <div
+                        className="cursor-grab active:cursor-grabbing text-muted-foreground/60 hover:text-foreground p-0.5 rounded transition-colors shrink-0"
+                        title="Drag to reorder group"
+                      >
+                        <GripVertical className="h-4.5 w-4.5" />
+                      </div>
+                    )}
 
                     {/* Accordion Toggle Button */}
                     <button
@@ -578,70 +606,74 @@ export function WorkspacePage() {
                       </Button>
                     )}
 
-                    {/* Add Sub-group */}
-                    <button
-                      onClick={() =>
-                        setSubGroupModalTarget({
-                          itemId: item.id,
-                          itemName: item.name,
-                          subGroupToEdit: null,
-                        })
-                      }
-                      className="h-8 px-2.5 rounded-lg border border-border bg-card hover:bg-muted text-xs font-semibold text-foreground inline-flex items-center gap-1 cursor-pointer transition-colors"
-                      title="Add a nested sub-group under this group"
-                    >
-                      <FolderPlus className="h-3.5 w-3.5 text-primary" />
-                      <span className="hidden sm:inline">Add Sub-group</span>
-                    </button>
+                    {canEditItem(item) && (
+                      <>
+                        {/* Add Sub-group */}
+                        <button
+                          onClick={() =>
+                            setSubGroupModalTarget({
+                              itemId: item.id,
+                              itemName: item.name,
+                              subGroupToEdit: null,
+                            })
+                          }
+                          className="h-8 px-2.5 rounded-lg border border-border bg-card hover:bg-muted text-xs font-semibold text-foreground inline-flex items-center gap-1 cursor-pointer transition-colors"
+                          title="Add a nested sub-group under this group"
+                        >
+                          <FolderPlus className="h-3.5 w-3.5 text-primary" />
+                          <span className="hidden sm:inline">Add Sub-group</span>
+                        </button>
 
-                    {/* Move Group to another workspace */}
-                    <button
-                      onClick={() => setItemToMove(item)}
-                      className="h-8 px-2.5 rounded-lg border border-border bg-card hover:bg-muted text-xs font-medium text-foreground inline-flex items-center gap-1 cursor-pointer transition-colors"
-                      title="Move to another workspace"
-                    >
-                      <FolderInput className="h-3.5 w-3.5 text-primary" />
-                      <span className="hidden sm:inline">Move</span>
-                    </button>
+                        {/* Move Group to another workspace */}
+                        <button
+                          onClick={() => setItemToMove(item)}
+                          className="h-8 px-2.5 rounded-lg border border-border bg-card hover:bg-muted text-xs font-medium text-foreground inline-flex items-center gap-1 cursor-pointer transition-colors"
+                          title="Move to another workspace"
+                        >
+                          <FolderInput className="h-3.5 w-3.5 text-primary" />
+                          <span className="hidden sm:inline">Move</span>
+                        </button>
 
-                    {/* Edit Group */}
-                    <button
-                      onClick={() => {
-                        setItemToEdit(item);
-                        setIsAddItemModalOpen(true);
-                      }}
-                      className="h-8 px-2.5 rounded-lg border border-border bg-card hover:bg-muted text-xs font-medium text-foreground inline-flex items-center gap-1 cursor-pointer transition-colors"
-                      title="Edit Group"
-                    >
-                      <Edit className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="hidden sm:inline">Edit</span>
-                    </button>
+                        {/* Edit Group */}
+                        <button
+                          onClick={() => {
+                            setItemToEdit(item);
+                            setIsAddItemModalOpen(true);
+                          }}
+                          className="h-8 px-2.5 rounded-lg border border-border bg-card hover:bg-muted text-xs font-medium text-foreground inline-flex items-center gap-1 cursor-pointer transition-colors"
+                          title="Edit Group"
+                        >
+                          <Edit className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span className="hidden sm:inline">Edit</span>
+                        </button>
 
-                    {/* Add Direct Link */}
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() =>
-                        setResourceModalTarget({
-                          itemId: item.id,
-                          itemName: item.name,
-                          resourceToEdit: null,
-                        })
-                      }
-                      className="h-8 px-2.5 text-xs gap-1 cursor-pointer"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      <span>Add Link</span>
-                    </Button>
+                        {/* Add Direct Link */}
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() =>
+                            setResourceModalTarget({
+                              itemId: item.id,
+                              itemName: item.name,
+                              resourceToEdit: null,
+                            })
+                          }
+                          className="h-8 px-2.5 text-xs gap-1 cursor-pointer"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          <span>Add Link</span>
+                        </Button>
 
-                    {/* Delete Item */}
-                    <button
-                      onClick={() => setItemToDelete({ id: item.id, name: item.name })}
-                      className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
-                      title="Delete Group"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                        {/* Delete Item */}
+                        <button
+                          onClick={() => setItemToDelete({ id: item.id, name: item.name })}
+                          className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                          title="Delete Group"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -659,7 +691,7 @@ export function WorkspacePage() {
                           return (
                             <div
                               key={sg.id}
-                              draggable
+                              draggable={canEditSubGroup(item, sg)}
                               onDragStart={(e) => handleSubGroupDragStart(e, sg.id)}
                               onDragOver={(e) => {
                                 e.preventDefault();
@@ -687,12 +719,14 @@ export function WorkspacePage() {
                               {/* Sub-group Accordion Header & Drop Target */}
                               <div className="flex flex-col sm:flex-row sm:items-center justify-between px-3 py-2.5 bg-muted/40 border-b border-border/50 gap-2 select-none">
                                 <div className="flex items-center gap-2 min-w-0">
-                                  <div
-                                    className="cursor-grab active:cursor-grabbing text-muted-foreground/60 hover:text-foreground p-0.5 rounded transition-colors shrink-0"
-                                    title="Drag to reorder sub-group"
-                                  >
-                                    <GripVertical className="h-4 w-4" />
-                                  </div>
+                                  {canEditSubGroup(item, sg) && (
+                                    <div
+                                      className="cursor-grab active:cursor-grabbing text-muted-foreground/60 hover:text-foreground p-0.5 rounded transition-colors shrink-0"
+                                      title="Drag to reorder sub-group"
+                                    >
+                                      <GripVertical className="h-4 w-4" />
+                                    </div>
+                                  )}
 
                                   <button
                                     onClick={() => toggleAccordion(sg.id)}
@@ -731,50 +765,54 @@ export function WorkspacePage() {
 
                                 {/* Sub-group Actions */}
                                 <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center pl-6 sm:pl-0">
-                                  <Button
-                                    variant="secondary"
-                                    size="sm"
-                                    onClick={() =>
-                                      setResourceModalTarget({
-                                        itemId: item.id,
-                                        itemName: `${item.name} > ${sg.name}`,
-                                        subGroupId: sg.id,
-                                        resourceToEdit: null,
-                                      })
-                                    }
-                                    className="h-7 px-2 text-[11px] gap-1 cursor-pointer"
-                                  >
-                                    <Plus className="h-3 w-3" />
-                                    <span>Add Link</span>
-                                  </Button>
+                                  {canEditSubGroup(item, sg) && (
+                                    <>
+                                      <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={() =>
+                                          setResourceModalTarget({
+                                            itemId: item.id,
+                                            itemName: `${item.name} > ${sg.name}`,
+                                            subGroupId: sg.id,
+                                            resourceToEdit: null,
+                                          })
+                                        }
+                                        className="h-7 px-2 text-[11px] gap-1 cursor-pointer"
+                                      >
+                                        <Plus className="h-3 w-3" />
+                                        <span>Add Link</span>
+                                      </Button>
 
-                                  <button
-                                    onClick={() =>
-                                      setSubGroupModalTarget({
-                                        itemId: item.id,
-                                        itemName: item.name,
-                                        subGroupToEdit: sg,
-                                      })
-                                    }
-                                    className="h-7 w-7 rounded-md border border-border/60 bg-card hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
-                                    title="Edit Sub-group"
-                                  >
-                                    <Edit className="h-3 w-3" />
-                                  </button>
+                                      <button
+                                        onClick={() =>
+                                          setSubGroupModalTarget({
+                                            itemId: item.id,
+                                            itemName: item.name,
+                                            subGroupToEdit: sg,
+                                          })
+                                        }
+                                        className="h-7 w-7 rounded-md border border-border/60 bg-card hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
+                                        title="Edit Sub-group"
+                                      >
+                                        <Edit className="h-3 w-3" />
+                                      </button>
 
-                                  <button
-                                    onClick={() =>
-                                      setSubGroupToDelete({
-                                        itemId: item.id,
-                                        subGroupId: sg.id,
-                                        name: sg.name,
-                                      })
-                                    }
-                                    className="h-7 w-7 rounded-md border border-border/60 bg-card hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex items-center justify-center transition-colors cursor-pointer"
-                                    title="Delete Sub-group"
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </button>
+                                      <button
+                                        onClick={() =>
+                                          setSubGroupToDelete({
+                                            itemId: item.id,
+                                            subGroupId: sg.id,
+                                            name: sg.name,
+                                          })
+                                        }
+                                        className="h-7 w-7 rounded-md border border-border/60 bg-card hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex items-center justify-center transition-colors cursor-pointer"
+                                        title="Delete Sub-group"
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </button>
+                                    </>
+                                  )}
                                 </div>
                               </div>
 
@@ -790,7 +828,7 @@ export function WorkspacePage() {
                                       {sgResources.map((res) => (
                                         <div
                                           key={res.id}
-                                          draggable
+                                          draggable={canEditSubGroup(item, sg)}
                                           onDragStart={(e) => handleResourceDragStart(e, res.id)}
                                           onDragOver={(e) => e.preventDefault()}
                                           onDrop={(e) =>
@@ -803,12 +841,14 @@ export function WorkspacePage() {
                                           )}
                                         >
                                           <div className="flex items-start gap-2 min-w-0">
-                                            <div
-                                              className="cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-foreground p-0.5 mt-0.5 rounded transition-colors shrink-0"
-                                              title="Drag to reorder or move link to another sub-group"
-                                            >
-                                              <GripVertical className="h-3.5 w-3.5" />
-                                            </div>
+                                            {canEditSubGroup(item, sg) && (
+                                              <div
+                                                className="cursor-grab active:cursor-grabbing text-muted-foreground/50 hover:text-foreground p-0.5 mt-0.5 rounded transition-colors shrink-0"
+                                                title="Drag to reorder or move link to another sub-group"
+                                              >
+                                                <GripVertical className="h-3.5 w-3.5" />
+                                              </div>
+                                            )}
 
                                             <div className="min-w-0 space-y-0.5">
                                               <div className="flex items-center gap-2.5 flex-wrap">
@@ -956,7 +996,7 @@ export function WorkspacePage() {
                           {directResources.map((res) => (
                             <div
                               key={res.id}
-                              draggable
+                              draggable={canEditItem(item)}
                               onDragStart={(e) => handleResourceDragStart(e, res.id)}
                               onDragOver={(e) => e.preventDefault()}
                               onDrop={(e) =>
@@ -969,12 +1009,14 @@ export function WorkspacePage() {
                               )}
                             >
                               <div className="flex items-start gap-2.5 min-w-0">
-                                <div
-                                  className="cursor-grab active:cursor-grabbing text-muted-foreground/60 hover:text-foreground p-0.5 mt-0.5 rounded transition-colors shrink-0"
-                                  title="Drag link into a sub-group or reorder"
-                                >
-                                  <GripVertical className="h-4 w-4" />
-                                </div>
+                                {canEditItem(item) && (
+                                  <div
+                                    className="cursor-grab active:cursor-grabbing text-muted-foreground/60 hover:text-foreground p-0.5 mt-0.5 rounded transition-colors shrink-0"
+                                    title="Drag link into a sub-group or reorder"
+                                  >
+                                    <GripVertical className="h-4 w-4" />
+                                  </div>
+                                )}
 
                                 <div className="min-w-0 space-y-1">
                                   <div className="flex items-center gap-2.5 flex-wrap">
@@ -1019,33 +1061,37 @@ export function WorkspacePage() {
                                   <Globe className="h-3.5 w-3.5" />
                                 </Button>
 
-                                <button
-                                  onClick={() =>
-                                    setResourceModalTarget({
-                                      itemId: item.id,
-                                      itemName: item.name,
-                                      resourceToEdit: res,
-                                    })
-                                  }
-                                  className="h-8 w-8 rounded-lg border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
-                                  title="Edit Link"
-                                >
-                                  <Edit className="h-3.5 w-3.5" />
-                                </button>
+                                {canEditItem(item) && (
+                                  <>
+                                    <button
+                                      onClick={() =>
+                                        setResourceModalTarget({
+                                          itemId: item.id,
+                                          itemName: item.name,
+                                          resourceToEdit: res,
+                                        })
+                                      }
+                                      className="h-8 w-8 rounded-lg border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
+                                      title="Edit Link"
+                                    >
+                                      <Edit className="h-3.5 w-3.5" />
+                                    </button>
 
-                                <button
-                                  onClick={() =>
-                                    setResourceToDelete({
-                                      itemId: item.id,
-                                      resourceId: res.id,
-                                      name: res.name,
-                                    })
-                                  }
-                                  className="h-8 w-8 rounded-lg border border-border bg-card hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex items-center justify-center transition-colors cursor-pointer"
-                                  title="Delete Link"
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </button>
+                                    <button
+                                      onClick={() =>
+                                        setResourceToDelete({
+                                          itemId: item.id,
+                                          resourceId: res.id,
+                                          name: res.name,
+                                        })
+                                      }
+                                      className="h-8 w-8 rounded-lg border border-border bg-card hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex items-center justify-center transition-colors cursor-pointer"
+                                      title="Delete Link"
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </button>
+                                  </>
+                                )}
                               </div>
                             </div>
                           ))}

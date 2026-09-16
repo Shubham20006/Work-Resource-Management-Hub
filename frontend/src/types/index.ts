@@ -1,5 +1,10 @@
 export type WorkspaceCategory = 'Projects' | 'Academic' | 'Sheets' | 'CFP' | 'Other';
 
+export interface SharedWith {
+  userId: string;
+  role: 'viewer' | 'editor';
+}
+
 export interface Resource {
   id: string;
   itemId?: string;
@@ -21,6 +26,7 @@ export interface SubGroup {
   description?: string;
   order?: number;
   resources: Resource[];
+  sharedWith?: SharedWith[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -35,6 +41,7 @@ export interface Item {
   order?: number;
   resources: Resource[];
   subGroups?: SubGroup[];
+  sharedWith?: SharedWith[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -43,6 +50,7 @@ export type SortOption = 'updated-desc' | 'updated-asc' | 'name-asc' | 'name-des
 
 export interface Card {
   id: string;
+  userId?: string;
   name: string;
   description: string;
   icon: string;
@@ -51,6 +59,7 @@ export interface Card {
   order?: number;
   isFavorite?: boolean;
   items: Item[];
+  sharedWith?: SharedWith[];
   createdAt?: string;
   updatedAt?: string;
 }
